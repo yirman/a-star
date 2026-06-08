@@ -9,6 +9,9 @@ from astar import Nodo, algoritmo_a_estrella_paso_a_paso, distancia_manhattan
 # Te sugiero renombrar "generador-laberinto.py" a "generador_laberinto.py" (con guion bajo).
 from generador_laberinto import generar_laberinto_completo
 
+# Importamos el mecanismo de persistencia de datos sin tocar la lógica de negocio
+from generador_reporte import exportar_reporte_txt
+
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 ANCHO_PANEL_CONTROL = 150
 DIMENSION_CELDA = 25  # Tamaño de cada cuadrícula en píxeles
@@ -192,6 +195,13 @@ def main():
                     busqueda_finalizada = True
                     if ruta:
                         ruta_optima = ruta
+                    
+                    # =========================================================================
+                    # UNIENDO EL COPIADO DE DATOS: Llama al exportador al finalizar la búsqueda
+                    # =========================================================================
+                    exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberinto)
+                    # =========================================================================
+
             except StopIteration:
                 animacion_activa = False
                 busqueda_finalizada = True
