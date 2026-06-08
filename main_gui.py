@@ -2,7 +2,7 @@ import pygame
 import sys
 
 # Importamos la clase Nodo y el algoritmo desde astar.py
-from astar import Nodo, algoritmo_a_estrella_paso_a_paso, distancia_manhattan
+from a_star import Nodo, algoritmo_a_estrella_paso_a_paso, distancia_manhattan
 
 # Importamos la función de generación desde generador_laberinto.py
 # Nota: Si tu archivo usa guion medio, Python no permite importarlo directamente de forma nativa.

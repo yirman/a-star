@@ -1,6 +1,6 @@
 import random
 # Importamos la clase Nodo desde astar.py para que compartan la misma estructura en memoria
-from astar import Nodo
+from a_star import Nodo
 
 def generar_laberinto_completo(filas, columnas, tipo_laberinto="perfecto", factor_imperfecto=0.50):
     """Genera la matriz del laberinto usando celdas de tipo Nodo."""
