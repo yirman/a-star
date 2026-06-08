@@ -96,10 +96,10 @@ def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laber
         ("[P] Lab. Perfecto", False),
         ("[I] Lab. Imperfecto", False),
         ("[R] Reiniciar A*", False),
-        ("[A] Auto-Abrir TXT", False), # Nueva línea visual de control
+        ("[A] Auto-Abrir Reporte", False), # Nueva línea visual de control
         ("", False),
         (f"Modo: {modo_laberinto.upper()}", True),
-        (f"Auto-Abrir: {'SÍ' if auto_abrir_reporte else 'NO'}", True), # Muestra el estado actual
+        (f"Auto-Abrir-Reporte: {'SÍ' if auto_abrir_reporte else 'NO'}", True), # Muestra el estado actual
     ]
 
     y_offset = 20
