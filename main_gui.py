@@ -14,11 +14,11 @@ from generador_reporte import exportar_reporte_txt
 
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 ANCHO_PANEL_CONTROL = 150
-DIMENSION_CELDA = 25  # Tamaño de cada cuadrícula en píxeles
+DIMENSION_CELDA = 35  # Tamaño de cada cuadrícula en píxeles
 
 # Dimensiones del laberinto (Deben ser impares)
-FILAS = 25
-COLUMNAS = 25
+FILAS = 19
+COLUMNAS = 19
 
 # Colores (RGB)
 COLOR_PARED = (33, 47, 61)       # Gris oscuro
@@ -30,14 +30,20 @@ COLOR_VISITADO = (231, 76, 60)   # Rojo/Naranja (Closed Set)
 COLOR_RUTA = (241, 196, 15)      # Amarillo (Ruta Final)
 COLOR_FONDO_PANEL = (242, 243, 244)
 COLOR_TEXTO = (44, 62, 80)
+COLOR_TEXTO_COSTOS = (28, 40, 51) # Gris muy oscuro para legibilidad numérica
 
 def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laberinto, alto_ventana, auto_abrir_reporte):
     pantalla.fill(COLOR_VACIO)
+
+    # Inicializar fuente pequeña para los costos internos de las celdas
+    fuente_costos = pygame.font.SysFont("Arial", 9, bold=True)
 
     # 1. Dibujar el Laberinto / Cuadrícula
     for f in range(FILAS):
         for c in range(COLUMNAS):
             nodo = cuadricula[f][c]
+            x_celda = c * DIMENSION_CELDA
+            y_celda = f * DIMENSION_CELDA
             rectangulo = pygame.Rect(c * DIMENSION_CELDA, f * DIMENSION_CELDA, DIMENSION_CELDA, DIMENSION_CELDA)
 
             # Determinar color según el tipo base o su estado en las estructuras
@@ -58,7 +64,23 @@ def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laber
                     color = COLOR_VACIO
 
             pygame.draw.rect(pantalla, color, rectangulo)
-            pygame.draw.rect(pantalla, (220, 220, 220), rectangulo, 1)  # Retícula sutil
+            pygame.draw.rect(pantalla, (210, 210, 210), rectangulo, 1)  # Retícula sutil
+
+            # --- NUEVA SECCIÓN: RENDERIZADO DE COSTOS F, G, H INTERNOS ---
+            # Solo dibujamos texto si la celda ha sido descubierta y sus costos calculados (no son infinitos)
+            if nodo.tipo in ["VACIO", "INICIO", "META"] and nodo.f != float('inf') and nodo.tipo != "PARED":
+                # Arriba-Izquierda -> F = G + H
+                txt_f = fuente_costos.render(str(int(nodo.f)), True, COLOR_TEXTO_COSTOS)
+                pantalla.blit(txt_f, (x_celda + 3, y_celda + 2))
+
+                # Abajo-Izquierda -> G (Pasos recorridos)
+                txt_g = fuente_costos.render(str(int(nodo.g)), True, COLOR_TEXTO_COSTOS)
+                pantalla.blit(txt_g, (x_celda + 3, y_celda + DIMENSION_CELDA - 12))
+
+                # Abajo-Derecha -> H (Heurística Manhattan)
+                txt_h = fuente_costos.render(str(int(nodo.h)), True, COLOR_TEXTO_COSTOS)
+                # Cálculo de posición dinámica a la derecha restando el ancho del texto renderizado
+                pantalla.blit(txt_h, (x_celda + DIMENSION_CELDA - txt_h.get_width() - 3, y_celda + DIMENSION_CELDA - 12))
 
     # 2. Dibujar Panel de Control Lateral
     x_panel = COLUMNAS * DIMENSION_CELDA
