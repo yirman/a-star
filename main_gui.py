@@ -31,7 +31,7 @@ COLOR_RUTA = (241, 196, 15)      # Amarillo (Ruta Final)
 COLOR_FONDO_PANEL = (242, 243, 244)
 COLOR_TEXTO = (44, 62, 80)
 
-def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laberinto, alto_ventana):
+def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laberinto, alto_ventana, auto_abrir_reporte):
     pantalla.fill(COLOR_VACIO)
 
     # 1. Dibujar el Laberinto / Cuadrícula
@@ -74,8 +74,10 @@ def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laber
         ("[P] Lab. Perfecto", False),
         ("[I] Lab. Imperfecto", False),
         ("[R] Reiniciar A*", False),
+        ("[A] Auto-Abrir TXT", False), # Nueva línea visual de control
         ("", False),
         (f"Modo: {modo_laberinto.upper()}", True),
+        (f"Auto-Abrir: {'SÍ' if auto_abrir_reporte else 'NO'}", True), # Muestra el estado actual
     ]
 
     y_offset = 20
@@ -130,6 +132,8 @@ def main():
     nodos_visitados = set()
     nodos_frontera = []
 
+    auto_abrir_reporte = False
+
     while True:
         reloj.tick(30)  # Velocidad de la animación (FPS)
 
@@ -182,6 +186,10 @@ def main():
                     for fila in cuadricula:
                         for nodo in fila:
                             nodo.reset_busqueda()
+                
+                # [A] -> Conmuta (habilita/deshabilita) la apertura automática del TXT
+                if evento.key == pygame.K_a:
+                    auto_abrir_reporte = not auto_abrir_reporte
 
         # Avanzar el frame de la animación del algoritmo
         if animacion_activa and generador_a_star:
@@ -199,7 +207,7 @@ def main():
                     # =========================================================================
                     # UNIENDO EL COPIADO DE DATOS: Llama al exportador al finalizar la búsqueda
                     # =========================================================================
-                    exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberinto)
+                    exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberinto, auto_abrir_reporte)
                     # =========================================================================
 
             except StopIteration:
@@ -207,7 +215,7 @@ def main():
                 busqueda_finalizada = True
 
         # Renderizar la pantalla pasando los datos de los tres archivos combinados
-        dibujar_interfaz(pantalla, cuadricula, ruta_optima, nodos_visitados, nodos_frontera, modo_laberinto, alto_total)
+        dibujar_interfaz(pantalla, cuadricula, ruta_optima, nodos_visitados, nodos_frontera, modo_laberinto, alto_total, auto_abrir_reporte)
         pygame.display.update()
 
 if __name__ == "__main__":

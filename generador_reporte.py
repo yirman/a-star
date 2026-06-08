@@ -1,9 +1,11 @@
 import os
+import platform
 
-def exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberinto, nombre_archivo="reporte_ejecucion.txt"):
+def exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberinto, abrir_automatico=False, nombre_archivo="reporte_ejecucion.txt"):
     """
     Genera un archivo de texto con el mapa del laberinto resuelto y 
     una redacción paso a paso de la ejecución histórica del algoritmo A*.
+    Habilita la apertura automática si 'abrir_automatico' es True.
     """
     filas = len(cuadricula)
     columnas = len(cuadricula[0])
@@ -78,8 +80,20 @@ def exportar_reporte_txt(cuadricula, ruta_optima, nodos_visitados, modo_laberint
 
         # Si terminó y no se llegó a la meta
         if not ruta_optima:
-            f.write("\n[FIN DE LA BÚSQUEDA] La cola de prioridad se vació por completo.\n")
-            f.write("                     El agente exploró todos los pasillos accesibles sin interceptar la meta.\n")
-            f.write("                     Conclusión: El laberinto no posee soluciones válidas.\n")
+            f.write("\n[FIN DE LA BÚSQUEDA] La cola de prioridad se vació por completo sin soluciones válidas.\n")
 
-    print(f" Reporte generado exitosamente con el nombre: '{nombre_archivo}'")
+    print(f" Reporte generado con éxito: '{nombre_archivo}'")
+
+    # --- NUEVO MECANISMO DE APERTURA AUTOMÁTICA CONDICIONADA ---
+    if abrir_automatico:
+        try:
+            # Detectamos el sistema operativo para ejecutar el comando nativo correcto
+            sistema = platform.system()
+            if sistema == "Windows":
+                os.startfile(nombre_archivo)
+            elif sistema == "Darwin":  # macOS
+                os.system(f"open {nombre_archivo}")
+            else:  # Linux y otros
+                os.system(f"xdg-open {nombre_archivo}")
+        except Exception as e:
+            print(f"No se pudo abrir el archivo automáticamente: {e}")
