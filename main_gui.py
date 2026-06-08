@@ -1,0 +1,204 @@
+import pygame
+import sys
+
+# Importamos la clase Nodo y el algoritmo desde astar.py
+from astar import Nodo, algoritmo_a_estrella_paso_a_paso, distancia_manhattan
+
+# Importamos la función de generación desde generador_laberinto.py
+# Nota: Si tu archivo usa guion medio, Python no permite importarlo directamente de forma nativa.
+# Te sugiero renombrar "generador-laberinto.py" a "generador_laberinto.py" (con guion bajo).
+from generador_laberinto import generar_laberinto_completo
+
+# --- CONFIGURACIÓN DE LA INTERFAZ ---
+ANCHO_PANEL_CONTROL = 150
+DIMENSION_CELDA = 25  # Tamaño de cada cuadrícula en píxeles
+
+# Dimensiones del laberinto (Deben ser impares)
+FILAS = 25
+COLUMNAS = 25
+
+# Colores (RGB)
+COLOR_PARED = (33, 47, 61)       # Gris oscuro
+COLOR_VACIO = (255, 255, 255)     # Blanco
+COLOR_INICIO = (41, 128, 185)    # Azul
+COLOR_META = (155, 89, 182)      # Morado
+COLOR_FRONTERA = (46, 204, 113)  # Verde brillante (Open Set)
+COLOR_VISITADO = (231, 76, 60)   # Rojo/Naranja (Closed Set)
+COLOR_RUTA = (241, 196, 15)      # Amarillo (Ruta Final)
+COLOR_FONDO_PANEL = (242, 243, 244)
+COLOR_TEXTO = (44, 62, 80)
+
+def dibujar_interfaz(pantalla, cuadricula, ruta, visitados, frontera, modo_laberinto, alto_ventana):
+    pantalla.fill(COLOR_VACIO)
+
+    # 1. Dibujar el Laberinto / Cuadrícula
+    for f in range(FILAS):
+        for c in range(COLUMNAS):
+            nodo = cuadricula[f][c]
+            rectangulo = pygame.Rect(c * DIMENSION_CELDA, f * DIMENSION_CELDA, DIMENSION_CELDA, DIMENSION_CELDA)
+
+            # Determinar color según el tipo base o su estado en las estructuras
+            if nodo.tipo == "PARED":
+                color = COLOR_PARED
+            elif nodo.tipo == "INICIO":
+                color = COLOR_INICIO
+            elif nodo.tipo == "META":
+                color = COLOR_META
+            else:
+                if ruta and nodo in ruta:
+                    color = COLOR_RUTA
+                elif nodo in frontera:
+                    color = COLOR_FRONTERA
+                elif nodo in visitados:
+                    color = COLOR_VISITADO
+                else:
+                    color = COLOR_VACIO
+
+            pygame.draw.rect(pantalla, color, rectangulo)
+            pygame.draw.rect(pantalla, (220, 220, 220), rectangulo, 1)  # Retícula sutil
+
+    # 2. Dibujar Panel de Control Lateral
+    x_panel = COLUMNAS * DIMENSION_CELDA
+    panel_rect = pygame.Rect(x_panel, 0, ANCHO_PANEL_CONTROL, alto_ventana)
+    pygame.draw.rect(pantalla, COLOR_FONDO_PANEL, panel_rect)
+
+    fuente = pygame.font.SysFont("Arial", 14)
+    fuente_negrita = pygame.font.SysFont("Arial", 14, bold=True)
+
+    instrucciones = [
+        ("CONTROLES", True),
+        ("[ESPACIO] Buscar", False),
+        ("[P] Lab. Perfecto", False),
+        ("[I] Lab. Imperfecto", False),
+        ("[R] Reiniciar A*", False),
+        ("", False),
+        (f"Modo: {modo_laberinto.upper()}", True),
+    ]
+
+    y_offset = 20
+    for texto, es_negrita in instrucciones:
+        if texto == "":
+            y_offset += 15
+            continue
+        render_texto = fuente_negrita.render(texto, True, COLOR_TEXTO) if es_negrita else fuente.render(texto, True, COLOR_TEXTO)
+        pantalla.blit(render_texto, (x_panel + 10, y_offset))
+        y_offset += 25
+
+    # 3. Dibujar Leyenda de Colores
+    y_offset += 20
+    leyenda = [
+        ("Inicio", COLOR_INICIO),
+        ("Meta", COLOR_META),
+        ("Pared", COLOR_PARED),
+        ("Frontera", COLOR_FRONTERA),
+        ("Visitado", COLOR_VISITADO),
+        ("Ruta Final", COLOR_RUTA)
+    ]
+
+    for texto, color in leyenda:
+        pygame.draw.rect(pantalla, color, (x_panel + 10, y_offset, 15, 15))
+        render_txt = fuente.render(texto, True, COLOR_TEXTO)
+        pantalla.blit(render_txt, (x_panel + 35, y_offset))
+        y_offset += 25
+
+def main():
+    pygame.init()
+    pygame.display.set_caption("Visualizador Algoritmo A* - UNEG")
+    
+    ancho_total = (COLUMNAS * DIMENSION_CELDA) + ANCHO_PANEL_CONTROL
+    alto_total = FILAS * DIMENSION_CELDA
+    pantalla = pygame.display.set_mode((ancho_total, alto_total))
+    reloj = pygame.time.Clock()
+
+    modo_laberinto = "perfecto"
+    # Llamamos a la función alojada en generador_laberinto.py
+    cuadricula = generar_laberinto_completo(FILAS, COLUMNAS, modo_laberinto)
+
+    inicio_nodo = cuadricula[1][1]
+    inicio_nodo.tipo = "INICIO"
+    meta_nodo = cuadricula[FILAS-2][COLUMNAS-2]
+    meta_nodo.tipo = "META"
+
+    generador_a_star = None
+    animacion_activa = False
+    busqueda_finalizada = False
+
+    ruta_optima = []
+    nodos_visitados = set()
+    nodos_frontera = []
+
+    while True:
+        reloj.tick(30)  # Velocidad de la animación (FPS)
+
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if evento.type == pygame.KEYDOWN:
+                # [ESPACIO] -> Iniciar la búsqueda importada paso a paso
+                if evento.key == pygame.K_SPACE and not animacion_activa and not busqueda_finalizada:
+                    for fila in cuadricula:
+                        for nodo in fila:
+                            nodo.reset_busqueda()
+                    generador_a_star = algoritmo_a_estrella_paso_a_paso(cuadricula, inicio_nodo, meta_nodo)
+                    animacion_activa = True
+
+                # [P] -> Nuevo Laberinto Perfecto
+                if evento.key == pygame.K_p:
+                    animacion_activa = False
+                    busqueda_finalizada = False
+                    modo_laberinto = "perfecto"
+                    cuadricula = generar_laberinto_completo(FILAS, COLUMNAS, modo_laberinto)
+                    inicio_nodo = cuadricula[1][1]
+                    inicio_nodo.tipo = "INICIO"
+                    meta_nodo = cuadricula[FILAS-2][COLUMNAS-2]
+                    meta_nodo.tipo = "META"
+                    ruta_optima, nodos_frontera = [], []
+                    nodos_visitados.clear()
+
+                # [I] -> Nuevo Laberinto Imperfecto
+                if evento.key == pygame.K_i:
+                    animacion_activa = False
+                    busqueda_finalizada = False
+                    modo_laberinto = "imperfecto"
+                    cuadricula = generar_laberinto_completo(FILAS, COLUMNAS, modo_laberinto)
+                    inicio_nodo = cuadricula[1][1]
+                    inicio_nodo.tipo = "INICIO"
+                    meta_nodo = cuadricula[FILAS-2][COLUMNAS-2]
+                    meta_nodo.tipo = "META"
+                    ruta_optima, nodos_frontera = [], []
+                    nodos_visitados.clear()
+
+                # [R] -> Reiniciar estado de búsqueda manteniendo el mapa
+                if evento.key == pygame.K_r:
+                    animacion_activa = False
+                    busqueda_finalizada = False
+                    ruta_optima, nodos_frontera = [], []
+                    nodos_visitados.clear()
+                    for fila in cuadricula:
+                        for nodo in fila:
+                            nodo.reset_busqueda()
+
+        # Avanzar el frame de la animación del algoritmo
+        if animacion_activa and generador_a_star:
+            try:
+                ruta, visitados, frontera, finalizado = next(generador_a_star)
+                nodos_visitados = visitados
+                nodos_frontera = frontera
+                
+                if finalizado:
+                    animacion_activa = False
+                    busqueda_finalizada = True
+                    if ruta:
+                        ruta_optima = ruta
+            except StopIteration:
+                animacion_activa = False
+                busqueda_finalizada = True
+
+        # Renderizar la pantalla pasando los datos de los tres archivos combinados
+        dibujar_interfaz(pantalla, cuadricula, ruta_optima, nodos_visitados, nodos_frontera, modo_laberinto, alto_total)
+        pygame.display.update()
+
+if __name__ == "__main__":
+    main()
